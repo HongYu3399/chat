@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白澤陪伴聊天機器人</title>
+  <meta name="description" content="白澤陪伴聊天機器人 - 您的智能對話夥伴">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    :root {
+      --primary-color: #4CAF50;
+      --primary-dark: #45a049;
+      --chat-bg: #f5f5f5;
+      --user-msg-bg: #e3f2fd;
+      --ai-msg-bg: #f1f8e9;
+      --border-radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--chat-bg);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+      padding: 1rem;
+      margin: 0;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    #chatbox {
+      flex: 1;
+      padding: 1rem;
+      margin: 0;
+      overflow-y: auto;
+      background-color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .input-container {
+      padding: 1rem;
+      background-color: white;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 0.5rem;
+      position: sticky;
+      bottom: 0;
+    }
+
+    #userInput {
+      flex: 1;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    #userInput:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    button {
+      min-width: 60px;
+      padding: 0.8rem;
+      font-size: 1rem;
+      cursor: pointer;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      transition: all 0.3s;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .userMessage, .aiMessage {
+      padding: 0.8rem 1rem;
+      border-radius: var(--border-radius);
+      max-width: 85%;
+      word-wrap: break-word;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .userMessage {
+      background-color: var(--user-msg-bg);
+      color: #1565c0;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .aiMessage {
+      background-color: var(--ai-msg-bg);
+      color: #2e7d32;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 載入中動畫 */
+    .typing {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.8rem;
+      background: var(--ai-msg-bg);
+      border-radius: var(--border-radius);
+      width: fit-content;
+    }
+
+    .typing span {
+      width: 8px;
+      height: 8px;
+      background: #2e7d32;
+      border-radius: 50%;
+      animation: bounce 1.5s infinite;
+    }
+
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-4px); }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        height: 100vh;
+        height: -webkit-fill-available;
+      }
+
+      h1 {
+        font-size: 1.2rem;
+        padding: 0.8rem;
+      }
+
+      #chatbox {
+        padding: 0.8rem;
+      }
+
+      .input-container {
+        padding: 0.8rem;
+      }
+
+      .userMessage, .aiMessage {
+        max-width: 90%;
+        font-size: 0.95rem;
+      }
+
+      button {
+        min-width: 50px;
+        padding: 0.6rem;
+      }
+    }
+
+    /* iOS Safari 特定優化 */
+    @supports (-webkit-touch-callout: none) {
+      body {
+        min-height: -webkit-fill-available;
+      }
+    }
+
+    /* 新增名字設定對話框樣式 */
+    .name-dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .name-dialog-content {
+      background: white;
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .name-dialog h2 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .name-dialog input {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+    }
+
+    .name-dialog button {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    .user-name {
+      font-weight: bold;
+      color: #1565c0;
+    }
+
+    /* 設定按鈕樣式 */
+    .settings-btn {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      min-width: auto;
+      z-index: 101;
+    }
+
+    .settings-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: #666;
+    }
+
+    /* 設定對話框樣式 */
+    .settings-dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .settings-dialog-content {
+      background: white;
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .settings-dialog h2 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .settings-field {
+      margin-bottom: 1rem;
+    }
+
+    .settings-field label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #666;
+    }
+
+    .settings-field input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+    }
+
+    .settings-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .settings-buttons button {
+      flex: 1;
+    }
+
+    .cancel-btn {
+      background-color: #9e9e9e;
+    }
+
+    /* 搜尋容器樣式 */
+    .search-container {
+      position: fixed;
+      top: 4rem;
+      right: 1rem;
+      z-index: 99;
+      display: flex;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      transform: translateX(120%);
+    }
+
+    .search-container.active {
+      transform: translateX(0);
+    }
+
+    .search-input {
+      padding: 0.6rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      width: 200px;
+      background: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .search-btn {
+      min-width: auto;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-color);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .search-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    /* 搜尋結果高亮樣式 */
+    .message-highlight {
+      background-color: #fff3cd !important;
+      box-shadow: 0 0 0 2px #ffd700 !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- 在 body 開頭加入名字設定對話框 -->
+  <div id="nameDialog" class="name-dialog">
+    <div class="name-dialog-content">
+      <h2>請輸入您的名字</h2>
+      <input type="text" id="nameInput" placeholder="請輸入名字..." maxlength="20">
+      <button onclick="setUserName()">開始聊天</button>
+    </div>
+  </div>
+
+  <!-- 添加設定按鈕 -->
+  <button class="settings-btn" onclick="openSettings()" aria-label="開啟設定">
+    <svg viewBox="0 0 24 24">
+      <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+    </svg>
+  </button>
+
+  <!-- 修改設定對話框的內容 -->
+  <div id="settingsDialog" class="settings-dialog">
+    <div class="settings-dialog-content">
+      <h2>聊天設定</h2>
+      <div class="settings-field">
+        <label for="titleInput">聊天機器人名稱</label>
+        <input type="text" id="titleInput" placeholder="請輸入完整名稱..." maxlength="30">
+        <small style="color: #666; margin-top: 0.5rem; display: block;">例如：白澤陪伴聊天機器人</small>
+      </div>
+      <div class="settings-field">
+        <label for="userNameInput">您的名字</label>
+        <input type="text" id="userNameInput" placeholder="請輸入您的名字..." maxlength="20">
+      </div>
+      <div class="settings-buttons">
+        <button class="cancel-btn" onclick="closeSettings()">取消</button>
+        <button onclick="saveSettings()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <h1>白澤陪伴聊天機器人</h1>
+  <!-- 搜尋按鈕 -->
+  <button class="search-btn" onclick="toggleSearch()" aria-label="搜尋聊天記錄" style="position: fixed; top: 1rem; right: 4rem; z-index: 101;">
+    <svg viewBox="0 0 24 24">
+      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+    </svg>
+  </button>
+
+  <!-- 搜尋容器 -->
+  <div id="searchContainer" class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="搜尋聊天記錄...">
+    <button class="search-btn" onclick="searchMessages()">
+      <svg viewBox="0 0 24 24">
+        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+      </svg>
+    </button>
+  </div>
+  <div id="chatbox" role="log" aria-label="聊天訊息"></div>
+  <div class="input-container">
+    <input type="text" id="userInput" placeholder="輸入訊息..." aria-label="訊息輸入框">
+    <button onclick="sendMessage()" aria-label="發送訊息">發送</button>
+  </div>
+
+  <script>
+    // 添加 Supabase 客戶端
+    const SUPABASE_URL = 'https://hbyivqcrtvtkrlckhnyx.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhieWl2cWNydHZ0a3JsY2tobnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc4NjYxNTYsImV4cCI6MjA1MzQ0MjE1Nn0.SGsMHfjLCvgbR8I9qXNFv1bbimv3Fru8MFB4XjqKbUg';
+
+    // 初始化 session_id（用於分組聊天記錄）
+    let sessionId = localStorage.getItem('chatSessionId') || crypto.randomUUID();
+    localStorage.setItem('chatSessionId', sessionId);
+
+    let userName = localStorage.getItem('chatUserName');
+    let aiName = localStorage.getItem('aiName') || '白澤';
+    let botTitle = localStorage.getItem('botTitle') || '白澤陪伴聊天機器人';
+
+    // 檢查是否已有使用者名稱
+    function checkUserName() {
+      const nameDialog = document.getElementById('nameDialog');
+      if (userName) {
+        nameDialog.style.display = 'none';
+      } else {
+        // 如果是第一次使用，直接開啟設定對話框
+        openSettings();
+      }
+    }
+
+    // 設定使用者名稱
+    function setUserName() {
+      const nameInput = document.getElementById('nameInput');
+      const name = nameInput.value.trim();
+      
+      if (name) {
+        userName = name;
+        localStorage.setItem('chatUserName', name);
+        document.getElementById('nameDialog').style.display = 'none';
+        document.getElementById('userInput').focus();
+      } else {
+        nameInput.classList.add('shake');
+        setTimeout(() => nameInput.classList.remove('shake'), 500);
+      }
+    }
+
+    // 名字輸入框的 Enter 鍵處理
+    document.getElementById('nameInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        setUserName();
+      }
+    });
+
+    function openSettings() {
+      const dialog = document.getElementById('settingsDialog');
+      const titleInput = document.getElementById('titleInput');
+      const userNameInput = document.getElementById('userNameInput');
+      
+      titleInput.value = botTitle;
+      userNameInput.value = userName || '';
+      
+      dialog.style.display = 'flex';
+      titleInput.focus();
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsDialog').style.display = 'none';
+    }
+
+    function saveSettings() {
+      const titleInput = document.getElementById('titleInput');
+      const userNameInput = document.getElementById('userNameInput');
+      const newTitle = titleInput.value.trim();
+      const newUserName = userNameInput.value.trim();
+      
+      let isValid = true;
+      
+      if (!newTitle) {
+        titleInput.classList.add('shake');
+        setTimeout(() => titleInput.classList.remove('shake'), 500);
+        isValid = false;
+      }
+      
+      if (!newUserName) {
+        userNameInput.classList.add('shake');
+        setTimeout(() => userNameInput.classList.remove('shake'), 500);
+        isValid = false;
+      }
+      
+      if (isValid) {
+        botTitle = newTitle;
+        localStorage.setItem('botTitle', botTitle);
+        
+        userName = newUserName;
+        localStorage.setItem('chatUserName', userName);
+        
+        closeSettings();
+        
+        document.querySelector('h1').textContent = botTitle;
+        document.title = botTitle;
+        aiName = botTitle.replace(/聊天機器人$/, '').trim();
+      }
+    }
+
+    // 修改發送訊息函數
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const chatbox = document.getElementById('chatbox');
+      const userMessage = input.value.trim();
+      
+      if (!userMessage) return;
+      
+      input.disabled = true;
+      document.querySelector('.input-container button').disabled = true;
+
+      try {
+        const sanitizedMessage = userMessage
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+          
+        chatbox.insertAdjacentHTML('beforeend', 
+          `<p class="userMessage"><span class="user-name">${userName}</span>: ${sanitizedMessage}</p>`);
+        
+        input.value = '';
+        
+        await saveChatHistory(sanitizedMessage, true);
+
+        const loadingEl = document.createElement('div');
+        loadingEl.className = 'typing';
+        loadingEl.innerHTML = '<span></span><span></span><span></span>';
+        chatbox.appendChild(loadingEl);
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        const response = await fetch('http://localhost:3000/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            message: userMessage,
+            userName: userName
+          })
+        });
+
+        loadingEl.remove();
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        
+        chatbox.insertAdjacentHTML('beforeend',
+          `<p class="aiMessage">${aiName}: ${data.reply}</p>`);
+        
+        // 儲存 AI 回覆
+        await saveChatHistory(data.reply, false);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        chatbox.insertAdjacentHTML('beforeend',
+          `<p class="aiMessage" style="color:#d32f2f;">${aiName}: 無法取得回覆，請檢查伺服器狀態</p>`);
+      } finally {
+        input.disabled = false;
+        document.querySelector('.input-container button').disabled = false;
+        input.focus();
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }
+    }
+
+    // 初始化檢查使用者名稱
+    checkUserName();
+
+    // 修改儲存聊天記錄的函數
+    async function saveChatHistory(message, isUser) {
+      try {
+        // 儲存到 localStorage
+        const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+        const newMessage = {
+          content: message,
+          timestamp: new Date().toISOString(),
+          isUser: isUser,
+          userName: isUser ? userName : aiName
+        };
+        history.push(newMessage);
+        localStorage.setItem('chatHistory', JSON.stringify(history));
+
+        // 儲存到 Supabase
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            user_name: newMessage.userName,
+            message: newMessage.content,
+            is_user: newMessage.isUser,
+            session_id: sessionId
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save to Supabase');
+        }
+      } catch (error) {
+        console.error('Error saving chat history:', error);
+      }
+    }
+
+    // 修改載入聊天記錄的函數
+    async function loadChatHistory() {
+      try {
+        // 從 Supabase 載入聊天記錄
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/chat_messages?session_id=eq.${sessionId}&order=created_at.asc`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to load from Supabase');
+        }
+
+        const messages = await response.json();
+        const chatbox = document.getElementById('chatbox');
+        
+        messages.forEach(msg => {
+          const className = msg.is_user ? 'userMessage' : 'aiMessage';
+          const name = msg.is_user ? 
+            `<span class="user-name">${msg.user_name}</span>` : msg.user_name;
+          
+          chatbox.insertAdjacentHTML('beforeend',
+            `<p class="${className}">${name}: ${msg.message}</p>`);
+        });
+        
+        chatbox.scrollTop = chatbox.scrollHeight;
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        // 如果從 Supabase 載入失敗，嘗試從 localStorage 載入
+        const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+        const chatbox = document.getElementById('chatbox');
+        
+        history.forEach(msg => {
+          const className = msg.isUser ? 'userMessage' : 'aiMessage';
+          const name = msg.isUser ? 
+            `<span class="user-name">${msg.userName}</span>` : msg.userName;
+          
+          chatbox.insertAdjacentHTML('beforeend',
+            `<p class="${className}">${name}: ${msg.content}</p>`);
+        });
+        
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }
+    }
+
+    // 在頁面載入時載入聊天記錄
+    window.addEventListener('DOMContentLoaded', loadChatHistory);
+
+    // 切換搜尋框顯示
+    function toggleSearch() {
+      const searchContainer = document.getElementById('searchContainer');
+      const searchInput = document.getElementById('searchInput');
+      searchContainer.classList.toggle('active');
+      
+      if (searchContainer.classList.contains('active')) {
+        searchInput.focus();
+      } else {
+        // 清除搜尋結果
+        clearSearch();
+      }
+    }
+
+    // 清除搜尋結果
+    function clearSearch() {
+      const messages = document.querySelectorAll('.userMessage, .aiMessage');
+      messages.forEach(msg => {
+        msg.classList.remove('message-highlight');
+      });
+      document.getElementById('searchInput').value = '';
+    }
+
+    // 更新搜尋功能
+    function searchMessages() {
+      const searchText = document.getElementById('searchInput').value.toLowerCase();
+      const messages = document.querySelectorAll('.userMessage, .aiMessage');
+      let found = false;
+      
+      messages.forEach(msg => {
+        const content = msg.textContent.toLowerCase();
+        msg.classList.remove('message-highlight');
+        
+        if (content.includes(searchText) && searchText !== '') {
+          msg.classList.add('message-highlight');
+          if (!found) {
+            msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            found = true;
+          }
+        }
+      });
+    }
+
+    // 添加搜尋框的 Enter 鍵處理
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchMessages();
+      }
+    });
+
+    // 添加點擊外部關閉搜尋框
+    document.addEventListener('click', function(e) {
+      const searchContainer = document.getElementById('searchContainer');
+      const searchBtn = document.querySelector('.search-btn');
+      
+      if (!searchContainer.contains(e.target) && 
+          !searchBtn.contains(e.target) && 
+          searchContainer.classList.contains('active')) {
+        toggleSearch();
+      }
+    });
+
+    function exportChatHistory() {
+      const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      const text = history.map(msg => 
+        `[${new Date(msg.timestamp).toLocaleString()}] ${msg.userName}: ${msg.content}`
+      ).join('\n');
+      
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `chat-history-${new Date().toISOString().slice(0,10)}.txt`;
+      a.click();
+    }
+  </script>
+</body>
+</html>
