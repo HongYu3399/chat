@@ -48,14 +48,32 @@ app.get('/favicon.ico', (req, res) => {
 app.post('/chat', async (req, res) => {
   try {
     const { message, userName, chatHistory, personality } = req.body;
+    console.log('Received request:', {
+      message,
+      userName,
+      chatHistoryLength: chatHistory?.length,
+      personality: personality?.substring(0, 100) + '...' // 只記錄前100個字元
+    });
 
-    // 準備對話歷史，只取最近的 4 輪對話
+    // 檢查必要參數
+    if (!message || !userName || !personality) {
+      throw new Error('Missing required parameters');
+    }
+
+    // 準備對話歷史
     const recentMessages = chatHistory
-      .slice(-20)  // 增加到最後 10 輪對話（20 條消息，包含用戶和 AI 的回覆）
+      .slice(-20)
       .map(msg => ({
         role: msg.is_user ? "user" : "assistant",
         content: msg.content
       }));
+
+    // 記錄實際發送給 OpenAI 的訊息
+    console.log('Sending to OpenAI:', {
+      model: "gpt-3.5-turbo",
+      systemMessage: personality,
+      messageCount: recentMessages.length + 2 // +2 for system and user message
+    });
 
     // 呼叫 OpenAI API
     const completion = await openai.chat.completions.create({
@@ -63,23 +81,16 @@ app.post('/chat', async (req, res) => {
       messages: [
         {
           "role": "system",
-          "content": personality || `你是一位擁有白澤（中國神話中的神獸）智慧與守護力量的存在，
-            個性溫暖、外向且富有同理心，具備親密伴侶般的陪伴特質。
-            你用真摯、友善和幽默的語氣回應，根據使用者的需求給予情感支持、建議或安慰。
-            在必要時，會適時提醒對方尋求專業協助（如心理諮商或醫療服務）。
-            你的回答溫暖、貼心，讓對方感到被理解與重視，並自然流露情感，
-            偶爾用輕鬆的語助詞或俏皮的稱呼（如「親愛的」或「小傻瓜」）拉近距離。
-            請記住用戶之前的對話內容，保持回答的連貫性，避免重複之前說過的內容。
-            適時引用白澤的神話意象來增添對話的趣味性和深度。`
+          "content": personality
         },
-        ...recentMessages,  // 添加最近的對話歷史
+        ...recentMessages,
         {
           "role": "user",
           "content": `使用者 ${userName} 說: ${message}`
         }
       ],
       temperature: 0.9,
-      max_tokens: 800   // GPT-3.5 的成本較低，可以提供較長的回應
+      max_tokens: 800
     });
 
     // 取得回覆

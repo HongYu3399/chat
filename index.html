@@ -821,23 +821,35 @@
 
         // 獲取當前機器人的個性設定
         const currentBot = bots.find(b => b.name === aiName);
-        const personality = currentBot ? currentBot.personality : bots[0].personality;
+        let personality;
+        if (currentBot && currentBot.personality) {
+          personality = currentBot.personality;
+        } else {
+          personality = bots[0].personality;
+        }
+        console.log('Current bot:', currentBot);
+        console.log('Sending personality:', personality);
 
         const response = await fetch('https://chat-u35b.onrender.com/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
           body: JSON.stringify({ 
             message: userMessage,
             userName: userName,
             chatHistory: chatHistory,
-            personality: personality
+            personality: personality.trim()
           })
         });
 
         loadingEl.remove();
 
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          const errorData = await response.json();
+          console.error('Server error:', errorData);
+          throw new Error(errorData.error || 'Server error');
         }
 
         const data = await response.json();
@@ -1119,6 +1131,9 @@
     function switchBot(bot) {
       aiName = bot.name;
       botTitle = bot.name;
+      console.log('Switching to bot:', bot);
+      console.log('Bot personality:', bot.personality);
+      
       localStorage.setItem('aiName', bot.name);
       localStorage.setItem('botTitle', bot.name);
       document.querySelector('h1').textContent = bot.name;
@@ -1133,7 +1148,7 @@
         }
       });
       
-      // 為每個對話生成新的 UUID
+      // 產生新的 session_id
       sessionId = crypto.randomUUID();
       localStorage.setItem('chatSessionId', sessionId);
       
@@ -1149,11 +1164,8 @@
       
       // 延遲一下再載入聊天記錄，確保 sessionId 已經更新
       setTimeout(() => {
-        // 載入新的聊天記錄
         loadChatHistory().then(() => {
-          // 移除載入中動畫
           loadingEl.remove();
-          // 滾動到最新訊息
           chatbox.scrollTop = chatbox.scrollHeight;
         }).catch(error => {
           console.error('Error loading chat history:', error);
