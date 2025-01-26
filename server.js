@@ -20,7 +20,7 @@ const openai = new OpenAI({
 
 // 中間件
 app.use(cors({
-  origin: ['https://hongyu3399.github.io', 'http://localhost:10000', 'https://chat-u35b.onrender.com'],
+  origin: '*',  // 允許所有來源
   methods: ['GET', 'POST'],
   credentials: true
 }));
