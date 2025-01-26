@@ -720,8 +720,7 @@
           session_id: sessionId,
           user_name: isUser ? userName : aiName,
           content: message,
-          is_user: isUser,
-          bot_id: bots.find(b => b.name === aiName)?.id || 'default'
+          is_user: isUser
         });
         
         const { error } = await supabaseClient
@@ -731,7 +730,6 @@
             user_name: isUser ? userName : aiName,
             content: message,
             is_user: isUser,
-            bot_id: bots.find(b => b.name === aiName)?.id || 'default',
             created_at: new Date().toISOString()
           }]);
         
@@ -758,6 +756,7 @@
         if (error) throw error;
         
         const chatbox = document.getElementById('chatbox');
+        chatbox.innerHTML = ''; // 清空現有內容
         
         data.forEach(msg => {
           const className = msg.is_user ? 'userMessage' : 'aiMessage';
@@ -768,22 +767,9 @@
             `<p class="${className}">${name}: ${msg.content}</p>`);
         });
         
+        chatbox.scrollTop = chatbox.scrollHeight;
       } catch (error) {
         console.error('Error loading chat history:', error);
-        // 如果從 Supabase 載入失敗，改從 localStorage 載入
-        const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-        const chatbox = document.getElementById('chatbox');
-        
-        history.forEach(msg => {
-          const className = msg.isUser ? 'userMessage' : 'aiMessage';
-          const name = msg.isUser ? 
-            `<span class="user-name">${msg.userName}</span>` : msg.userName;
-          
-          chatbox.insertAdjacentHTML('beforeend',
-            `<p class="${className}">${name}: ${msg.content}</p>`);
-        });
-      } finally {
-        chatbox.scrollTop = chatbox.scrollHeight;
       }
     }
 
@@ -1074,10 +1060,7 @@
         id: crypto.randomUUID(),
         name,
         title: name,
-        personality: `你是一位名叫 ${name} 的角色。
-          ${personality}
-          請記住用戶之前的對話內容，保持回答的連貫性，避免重複之前說過的內容。
-          用溫暖、友善的語氣回應，讓對方感到被理解與重視。`
+        personality: personality  // 直接使用輸入的人格設定
       };
 
       bots.push(newBot);

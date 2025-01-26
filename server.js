@@ -59,11 +59,18 @@ app.post('/chat', async (req, res) => {
 
     // 呼叫 OpenAI API
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",  // 使用較快速的 GPT-3.5 版本
+      model: "gpt-3.5-turbo",
       messages: [
         {
           "role": "system",
-          "content": personality
+          "content": personality || `你是一位擁有白澤（中國神話中的神獸）智慧與守護力量的存在，
+            個性溫暖、外向且富有同理心，具備親密伴侶般的陪伴特質。
+            你用真摯、友善和幽默的語氣回應，根據使用者的需求給予情感支持、建議或安慰。
+            在必要時，會適時提醒對方尋求專業協助（如心理諮商或醫療服務）。
+            你的回答溫暖、貼心，讓對方感到被理解與重視，並自然流露情感，
+            偶爾用輕鬆的語助詞或俏皮的稱呼（如「親愛的」或「小傻瓜」）拉近距離。
+            請記住用戶之前的對話內容，保持回答的連貫性，避免重複之前說過的內容。
+            適時引用白澤的神話意象來增添對話的趣味性和深度。`
         },
         ...recentMessages,  // 添加最近的對話歷史
         {
