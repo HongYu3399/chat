@@ -40,9 +40,16 @@
     // 從後端獲取 Supabase 配置
     async function initSupabase() {
       try {
+        // 如果已經初始化過，就直接返回
+        if (supabaseClient) {
+          return supabaseClient;
+        }
+
         const response = await fetch('https://chat-u35b.onrender.com/config');
         const config = await response.json();
         console.log('Supabase config:', config);
+        
+        // 只在第一次時創建客戶端
         supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
         
         // 測試連接
@@ -59,8 +66,10 @@
         
         // 初始化完成後載入聊天記錄
         await loadChatHistory();
+        return supabaseClient;
       } catch (error) {
         console.error('Error initializing Supabase:', error);
+        throw error;
       }
     }
     
@@ -574,9 +583,35 @@
       height: 150px;
       resize: vertical;
     }
+
+    .connection-status {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      background: #f44336;
+      color: white;
+      font-size: 0.9rem;
+      z-index: 1000;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .connection-status.connected {
+      background: #4caf50;
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+  <!-- 在 body 開頭加入連線狀態指示器 (在 nameDialog 之前) -->
+  <div id="connectionStatus" class="connection-status">
+    正在連線至伺服器...
+  </div>
+
   <!-- 在 body 開頭加入名字設定對話框 -->
   <div id="nameDialog" class="name-dialog">
     <div class="name-dialog-content">
@@ -1124,6 +1159,48 @@
     // 在頁面載入時更新機器人列表
     document.addEventListener('DOMContentLoaded', function() {
       updateBotList();
+    });
+
+    // 檢查伺服器連線狀態
+    async function checkServerStatus() {
+      const statusElement = document.getElementById('connectionStatus');
+      
+      try {
+        const response = await fetch('https://chat-u35b.onrender.com/test-supabase');
+        if (response.ok) {
+          statusElement.textContent = '伺服器已就緒';
+          statusElement.classList.add('connected');
+          // 3秒後隱藏狀態提示
+          setTimeout(() => {
+            statusElement.style.display = 'none';
+          }, 3000);
+          return true;
+        }
+      } catch (error) {
+        console.error('Server connection error:', error);
+        statusElement.textContent = '正在連線至伺服器...';
+        statusElement.classList.remove('connected');
+        return false;
+      }
+      return false;
+    }
+
+    // 在頁面載入時檢查伺服器狀態
+    document.addEventListener('DOMContentLoaded', async function() {
+      // 每 5 秒檢查一次伺服器狀態，直到連線成功
+      const checkInterval = setInterval(async () => {
+        const isConnected = await checkServerStatus();
+        if (isConnected) {
+          clearInterval(checkInterval);
+          // 初始化其他功能
+          checkUserName();
+          await initSupabase();
+          updateBotList();
+        }
+      }, 5000);
+      
+      // 立即執行第一次檢查
+      await checkServerStatus();
     });
   </script>
 </body>

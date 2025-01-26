@@ -59,7 +59,7 @@ app.post('/chat', async (req, res) => {
 
     // 呼叫 OpenAI API
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4-turbo-preview",  // 使用最新的 GPT-4 Turbo 模型
       messages: [
         {
           "role": "system",
@@ -80,7 +80,7 @@ app.post('/chat', async (req, res) => {
         }
       ],
       temperature: 0.9,
-      max_tokens: 800  // 增加回覆長度，讓 AI 能夠提供更詳細的回答
+      max_tokens: 1000  // 增加回覆長度上限，因為 GPT-4 的回答通常更詳細
     });
 
     // 取得回覆
@@ -112,6 +112,11 @@ app.get('/test-supabase', async (req, res) => {
     console.error('Supabase connection error:', error);
     res.status(500).json({ status: 'error', error: error.message });
   }
+});
+
+// 新增一個路由來檢查伺服器狀態
+app.get('/status', (req, res) => {
+  res.json({ status: 'ready' });
 });
 
 // 錯誤處理中間件
