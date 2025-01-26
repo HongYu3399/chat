@@ -1060,7 +1060,12 @@
         id: crypto.randomUUID(),
         name,
         title: name,
-        personality: personality  // 直接使用輸入的人格設定
+        personality: `你是一位名叫 ${name} 的角色。
+          ${personality}
+          
+          請以溫暖、友善的語氣回應，讓對方感到被理解與重視。
+          記住用戶之前的對話內容，保持回答的連貫性，避免重複之前說過的內容。
+          在必要時，適時提醒對方尋求專業協助（如心理諮商或醫療服務）。`
       };
 
       bots.push(newBot);
