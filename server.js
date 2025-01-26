@@ -19,9 +19,18 @@ const openai = new OpenAI({
 });
 
 // 中間件
-app.use(cors());
+app.use(cors({
+  origin: ['https://hongyu3399.github.io', 'http://localhost:10000'],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public')); // 提供靜態檔案服務
+
+// 處理 favicon.ico 請求
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
 
 // 聊天路由
 app.post('/chat', async (req, res) => {
