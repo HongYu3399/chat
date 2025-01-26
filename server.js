@@ -51,7 +51,7 @@ app.post('/chat', async (req, res) => {
 
     // 準備對話歷史，只取最近的 4 輪對話
     const recentMessages = chatHistory
-      .slice(-8)  // 取最後 4 輪對話（8 條消息，包含用戶和 AI 的回覆）
+      .slice(-20)  // 增加到最後 10 輪對話（20 條消息，包含用戶和 AI 的回覆）
       .map(msg => ({
         role: msg.is_user ? "user" : "assistant",
         content: msg.content
@@ -69,6 +69,8 @@ app.post('/chat', async (req, res) => {
             你會以友善、體貼的語氣回應，並根據使用者問題提供建議或安慰。
             在必要時，你可提醒對方尋求專業協助，例如心理諮商或醫療服務。
             回答時，盡量使用能讓對方感到安心和被重視的口吻。
+            請記住用戶之前的對話內容，並在回應時考慮上下文。
+            回答要有連貫性，避免重複之前說過的內容。
             如有需要，可以引用白澤的神話意象（如驅趕邪祟、洞察百怪等）。`
         },
         ...recentMessages,  // 添加最近的對話歷史
@@ -78,7 +80,7 @@ app.post('/chat', async (req, res) => {
         }
       ],
       temperature: 0.9,
-      max_tokens: 300  // 減少回覆長度以節省 token
+      max_tokens: 800  // 增加回覆長度，讓 AI 能夠提供更詳細的回答
     });
 
     // 取得回覆
