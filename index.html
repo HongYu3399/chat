@@ -12,6 +12,7 @@
     let userName = localStorage.getItem('chatUserName');
     let aiName = localStorage.getItem('aiName') || '白澤';
     let botTitle = localStorage.getItem('botTitle') || '白澤陪伴聊天機器人';
+    let sessionId = localStorage.getItem('chatSessionId') || crypto.randomUUID();
     let supabaseClient;
     
     // 從後端獲取 Supabase 配置
@@ -33,20 +34,17 @@
           throw error;
         }
         console.log('Supabase data:', data);
+        
+        // 初始化完成後載入聊天記錄
+        await loadChatHistory();
       } catch (error) {
         console.error('Error initializing Supabase:', error);
       }
     }
     
     // 初始化
-    initSupabase().then(() => {
-      // 初始化 session_id
-      let sessionId = localStorage.getItem('chatSessionId') || crypto.randomUUID();
-      localStorage.setItem('chatSessionId', sessionId);
-      
-      // 載入聊天記錄
-      loadChatHistory();
-    });
+    localStorage.setItem('chatSessionId', sessionId);
+    initSupabase();
   </script>
   <style>
     :root {
