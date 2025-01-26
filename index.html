@@ -15,9 +15,14 @@
     let sessionId = localStorage.getItem('chatSessionId') || crypto.randomUUID();
     let supabaseClient;
     
-    // 在頁面載入時檢查使用者名稱
-    document.addEventListener('DOMContentLoaded', function() {
+    // 在頁面載入時檢查使用者名稱和載入聊天記錄
+    document.addEventListener('DOMContentLoaded', async function() {
       checkUserName();
+      // 設置標題
+      document.querySelector('h1').textContent = botTitle;
+      
+      // 等待 Supabase 初始化完成後再載入聊天記錄
+      await initSupabase();
     });
     
     // 從後端獲取 Supabase 配置
@@ -47,9 +52,8 @@
       }
     }
     
-    // 初始化
+    // 確保 sessionId 被保存
     localStorage.setItem('chatSessionId', sessionId);
-    initSupabase();
   </script>
   <style>
     :root {
