@@ -59,7 +59,7 @@ app.post('/chat', async (req, res) => {
 
     // 呼叫 OpenAI API
     const completion = await openai.chat.completions.create({
-      model: "gpt-4-0613",     // 使用較便宜的 GPT-4 版本
+      model: "gpt-3.5-turbo",  // 使用較快速的 GPT-3.5 版本
       messages: [
         {
           "role": "system",
@@ -79,7 +79,7 @@ app.post('/chat', async (req, res) => {
         }
       ],
       temperature: 0.9,
-      max_tokens: 500   // 由於 GPT-4 的 token 成本較高，稍微降低上限
+      max_tokens: 800   // GPT-3.5 的成本較低，可以提供較長的回應
     });
 
     // 取得回覆
