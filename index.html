@@ -662,6 +662,105 @@
       }
     }
 
+    // 開啟設定對話框
+    function openSettings() {
+      const settingsDialog = document.getElementById('settingsDialog');
+      const titleInput = document.getElementById('titleInput');
+      const userNameInput = document.getElementById('userNameInput');
+      
+      titleInput.value = botTitle;
+      userNameInput.value = userName;
+      
+      settingsDialog.style.display = 'flex';
+    }
+
+    // 關閉設定對話框
+    function closeSettings() {
+      document.getElementById('settingsDialog').style.display = 'none';
+    }
+
+    // 儲存設定
+    function saveSettings() {
+      const titleInput = document.getElementById('titleInput');
+      const userNameInput = document.getElementById('userNameInput');
+      
+      const newTitle = titleInput.value.trim();
+      const newName = userNameInput.value.trim();
+      
+      if (newTitle && newName) {
+        botTitle = newTitle;
+        userName = newName;
+        
+        localStorage.setItem('botTitle', botTitle);
+        localStorage.setItem('chatUserName', userName);
+        
+        document.querySelector('h1').textContent = botTitle;
+        closeSettings();
+      }
+    }
+
+    // 切換搜尋框顯示
+    function toggleSearch() {
+      const searchContainer = document.getElementById('searchContainer');
+      const searchInput = document.getElementById('searchInput');
+      searchContainer.classList.toggle('active');
+      
+      if (searchContainer.classList.contains('active')) {
+        searchInput.focus();
+      } else {
+        // 清除搜尋結果
+        clearSearch();
+      }
+    }
+
+    // 清除搜尋結果
+    function clearSearch() {
+      const messages = document.querySelectorAll('.userMessage, .aiMessage');
+      messages.forEach(msg => {
+        msg.classList.remove('message-highlight');
+      });
+      document.getElementById('searchInput').value = '';
+    }
+
+    // 搜尋訊息
+    function searchMessages() {
+      const searchText = document.getElementById('searchInput').value.toLowerCase();
+      const messages = document.querySelectorAll('.userMessage, .aiMessage');
+      let found = false;
+      
+      messages.forEach(msg => {
+        const content = msg.textContent.toLowerCase();
+        msg.classList.remove('message-highlight');
+        
+        if (content.includes(searchText) && searchText !== '') {
+          msg.classList.add('message-highlight');
+          if (!found) {
+            msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            found = true;
+          }
+        }
+      });
+    }
+
+    // 添加搜尋框的 Enter 鍵處理
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchMessages();
+      }
+    });
+
+    // 添加點擊外部關閉搜尋框
+    document.addEventListener('click', function(e) {
+      const searchContainer = document.getElementById('searchContainer');
+      const searchBtn = document.querySelector('.search-btn');
+      
+      if (!searchContainer.contains(e.target) && 
+          !searchBtn.contains(e.target) && 
+          searchContainer.classList.contains('active')) {
+        toggleSearch();
+      }
+    });
+
     // 其他現有的程式碼...
   </script>
 </body>
