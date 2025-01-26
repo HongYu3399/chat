@@ -15,6 +15,11 @@
     let sessionId = localStorage.getItem('chatSessionId') || crypto.randomUUID();
     let supabaseClient;
     
+    // 在頁面載入時檢查使用者名稱
+    document.addEventListener('DOMContentLoaded', function() {
+      checkUserName();
+    });
+    
     // 從後端獲取 Supabase 配置
     async function initSupabase() {
       try {
@@ -439,6 +444,9 @@
         <label for="userNameInput">您的名字</label>
         <input type="text" id="userNameInput" placeholder="請輸入您的名字..." maxlength="20">
       </div>
+      <div class="settings-field" style="margin-top: 1.5rem;">
+        <button onclick="clearHistory()" style="background-color: #dc3545;">清除聊天記錄</button>
+      </div>
       <div class="settings-buttons">
         <button class="cancel-btn" onclick="closeSettings()">取消</button>
         <button onclick="saveSettings()">儲存</button>
@@ -473,29 +481,28 @@
     // 儲存聊天記錄函數
     async function saveChatHistory(message, isUser) {
       try {
-        // 儲存到 localStorage
-        const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-        const newMessage = {
+        console.log('Saving message:', {
+          session_id: sessionId,
+          user_name: isUser ? userName : aiName,
           content: message,
-          timestamp: new Date().toISOString(),
-          isUser: isUser,
-          userName: isUser ? userName : aiName
-        };
-        history.push(newMessage);
-        localStorage.setItem('chatHistory', JSON.stringify(history));
+          is_user: isUser
+        });
         
-        // 儲存到 Supabase
         const { error } = await supabaseClient
           .from('chat_messages')
           .insert([{
             session_id: sessionId,
-            user_name: newMessage.userName,
-            content: newMessage.content,
-            is_user: newMessage.isUser,
-            created_at: newMessage.timestamp
+            user_name: isUser ? userName : aiName,
+            content: message,
+            is_user: isUser,
+            created_at: new Date().toISOString()
           }]);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase save error:', error);
+          throw error;
+        }
+        console.log('Message saved successfully');
       } catch (error) {
         console.error('Error saving chat history:', error);
       }
@@ -630,6 +637,29 @@
         nameDialog.style.display = 'none';
       }
     }
+
+    // 清除聊天記錄函數
+    async function clearHistory() {
+      if (confirm('確定要清除目前的聊天記錄嗎？此操作無法復原。')) {
+        try {
+          // 清除畫面上的聊天記錄
+          document.getElementById('chatbox').innerHTML = '';
+          
+          // 關閉設定對話框
+          closeSettings();
+          
+          // 顯示成功訊息
+          alert('聊天記錄已清除');
+          
+          // 產生新的 session_id 以區分新的聊天
+          sessionId = crypto.randomUUID();
+          localStorage.setItem('chatSessionId', sessionId);
+          
+        } catch (error) {
+          console.error('Error clearing chat history:', error);
+          alert('清除聊天記錄時發生錯誤，請稍後再試');
+        }
+      }
 
     // 其他現有的程式碼...
   </script>
