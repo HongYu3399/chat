@@ -580,13 +580,29 @@
         chatbox.appendChild(loadingEl);
         chatbox.scrollTop = chatbox.scrollHeight;
 
+        // 獲取聊天歷史
+        let chatHistory = [];
+        try {
+          const { data, error } = await supabaseClient
+            .from('chat_messages')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: true });
+          
+          if (!error) {
+            chatHistory = data;
+          }
+        } catch (err) {
+          console.error('Error getting chat history:', err);
+        }
+
         const response = await fetch('https://chat-u35b.onrender.com/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             message: userMessage,
             userName: userName,
-            chatHistory: await getChatHistory()  // 獲取聊天歷史
+            chatHistory: chatHistory  // 使用上面獲取的聊天歷史
           })
         });
 
@@ -761,23 +777,6 @@
         toggleSearch();
       }
     });
-
-    // 獲取聊天歷史的輔助函數
-    async function getChatHistory() {
-      try {
-        const { data, error } = await supabaseClient
-          .from('chat_messages')
-          .select('*')
-          .eq('session_id', sessionId)
-          .order('created_at', { ascending: true });
-        
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Error getting chat history:', error);
-        return [];
-      }
-    }
   </script>
 </body>
 </html>
