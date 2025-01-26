@@ -1132,8 +1132,26 @@
       sessionId = crypto.randomUUID();
       localStorage.setItem('chatSessionId', sessionId);
       
-      // 清除聊天記錄
-      document.getElementById('chatbox').innerHTML = '';
+      // 清除聊天框並載入新的聊天記錄
+      const chatbox = document.getElementById('chatbox');
+      chatbox.innerHTML = '';
+      
+      // 顯示載入中動畫
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'typing';
+      loadingEl.innerHTML = '<span></span><span></span><span></span>';
+      chatbox.appendChild(loadingEl);
+      
+      // 載入新的聊天記錄
+      loadChatHistory().then(() => {
+        // 移除載入中動畫
+        loadingEl.remove();
+        // 滾動到最新訊息
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }).catch(error => {
+        console.error('Error loading chat history:', error);
+        loadingEl.remove();
+      });
       
       // 關閉側邊選單
       toggleSidebar();
