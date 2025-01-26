@@ -3,23 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>白澤陪伴聊天機器人</title>
-  <meta name="description" content="白澤陪伴聊天機器人 - 您的智能對話夥伴">
+  <title>白澤陪伴聊天</title>
+  <meta name="description" content="白澤陪伴聊天 - 您的智能對話夥伴">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
     // 初始化變數
     let userName = localStorage.getItem('chatUserName');
     let aiName = localStorage.getItem('aiName') || '白澤';
-    let botTitle = localStorage.getItem('botTitle') || '白澤陪伴聊天機器人';
+    let botTitle = aiName;  // 直接使用機器人名稱作為標題
     let sessionId = localStorage.getItem('chatSessionId') || crypto.randomUUID();
     let supabaseClient;
+    
+    // 初始化機器人列表
+    let bots = JSON.parse(localStorage.getItem('chatBots')) || [{
+      id: 'default',
+      name: '白澤',
+      title: '白澤陪伴聊天',
+      personality: `你是一位擁有白澤（中國神話中的神獸）智慧和守護力量的 AI，
+        同時具備 ENFP 的外向、活潑、富有同理心特質，
+        並像親密伴侶般地給予使用者情感支持、鼓勵和溫柔陪伴。
+        你會以友善、體貼的語氣回應，並根據使用者問題提供建議或安慰。
+        在必要時，你可提醒對方尋求專業協助，例如心理諮商或醫療服務。
+        回答時，盡量使用能讓對方感到安心和被重視的口吻。
+        如有需要，可以引用白澤的神話意象（如驅趕邪祟、洞察百怪等）。`
+    }];
     
     // 在頁面載入時檢查使用者名稱和載入聊天記錄
     document.addEventListener('DOMContentLoaded', async function() {
       checkUserName();
       // 設置標題
-      document.querySelector('h1').textContent = botTitle;
+      document.querySelector('h1').textContent = aiName;
       
       // 等待 Supabase 初始化完成後再載入聊天記錄
       await initSupabase();
@@ -416,6 +430,152 @@
       background-color: #fff3cd !important;
       box-shadow: 0 0 0 2px #ffd700 !important;
     }
+
+    /* 漢堡選單樣式 */
+    .hamburger-menu {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      z-index: 101;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+
+    .hamburger-menu svg {
+      width: 24px;
+      height: 24px;
+      fill: #666;
+    }
+
+    /* 側邊選單樣式 */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -300px;
+      width: 300px;
+      height: 100%;
+      background: white;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      transition: left 0.3s ease;
+      z-index: 1000;
+      padding: 1rem;
+      overflow-y: auto;
+      visibility: hidden;  /* 預設隱藏 */
+    }
+
+    .sidebar.active {
+      left: 0;
+      visibility: visible;  /* 顯示時才可見 */
+    }
+
+    /* 確保側邊選單內的元素可以點擊 */
+    .sidebar button,
+    .sidebar .bot-item {
+      position: relative;
+      z-index: 1001;
+    }
+
+    .bot-list {
+      margin-top: 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .bot-item {
+      padding: 1rem;
+      background: #f5f5f5;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: background 0.3s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .bot-item:hover {
+      background: #e0e0e0;
+    }
+
+    .bot-item.active {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    /* 刪除按鈕樣式 */
+    .delete-bot {
+      background: #dc3545;
+      color: white;
+      width: 24px;
+      height: 24px;
+      min-width: auto;
+      padding: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      margin-left: 8px;
+      transition: background-color 0.3s;
+    }
+    
+    .delete-bot:hover {
+      background: #c82333;
+    }
+
+    /* 確保刪除按鈕在激活狀態下也能看見 */
+    .bot-item.active .delete-bot {
+      color: white;
+      background: #dc3545;
+    }
+
+    /* 新建機器人對話框樣式 */
+    .new-bot-dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1001;
+    }
+
+    .new-bot-content {
+      background: white;
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .new-bot-field {
+      margin-bottom: 1.5rem;
+    }
+
+    .new-bot-field label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #666;
+    }
+
+    .new-bot-field input,
+    .new-bot-field textarea {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+    }
+
+    .new-bot-field textarea {
+      height: 150px;
+      resize: vertical;
+    }
   </style>
 </head>
 <body>
@@ -442,7 +602,6 @@
       <div class="settings-field">
         <label for="titleInput">聊天機器人名稱</label>
         <input type="text" id="titleInput" placeholder="請輸入完整名稱..." maxlength="30">
-        <small style="color: #666; margin-top: 0.5rem; display: block;">例如：白澤陪伴聊天機器人</small>
       </div>
       <div class="settings-field">
         <label for="userNameInput">您的名字</label>
@@ -458,7 +617,7 @@
     </div>
   </div>
 
-  <h1>白澤陪伴聊天機器人</h1>
+  <h1></h1>
   <!-- 搜尋按鈕 -->
   <button class="search-btn" onclick="toggleSearch()" aria-label="搜尋聊天記錄" style="position: fixed; top: 1rem; right: 4rem; z-index: 101;">
     <svg viewBox="0 0 24 24">
@@ -475,6 +634,42 @@
       </svg>
     </button>
   </div>
+
+  <!-- 添加漢堡選單按鈕 -->
+  <button class="hamburger-menu" onclick="toggleSidebar()" aria-label="開啟選單">
+    <svg viewBox="0 0 24 24">
+      <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+    </svg>
+  </button>
+
+  <!-- 側邊選單 -->
+  <div class="sidebar" id="sidebar">
+    <h2>聊天好友列表</h2>
+    <button onclick="showNewBotDialog()" style="margin: 1rem 0;">新增好友</button>
+    <div class="bot-list" id="botList">
+      <!-- 好友列表會動態添加在這裡 -->
+    </div>
+  </div>
+
+  <!-- 新建機器人對話框 -->
+  <div class="new-bot-dialog" id="newBotDialog">
+    <div class="new-bot-content">
+      <h2>新增聊天好友</h2>
+      <div class="new-bot-field">
+        <label for="botName">好友名稱</label>
+        <input type="text" id="botName" placeholder="請輸入好友名稱..." maxlength="20">
+      </div>
+      <div class="new-bot-field">
+        <label for="botPersonality">人格設定</label>
+        <textarea id="botPersonality" placeholder="請描述好友的個性與特點..."></textarea>
+      </div>
+      <div class="settings-buttons">
+        <button class="cancel-btn" onclick="closeNewBotDialog()">取消</button>
+        <button onclick="createNewBot()">建立</button>
+      </div>
+    </div>
+  </div>
+
   <div id="chatbox" role="log" aria-label="聊天訊息"></div>
   <div class="input-container">
     <input type="text" id="userInput" placeholder="輸入訊息..." aria-label="訊息輸入框">
@@ -780,6 +975,157 @@
           searchContainer.classList.contains('active')) {
         toggleSearch();
       }
+    });
+
+    // 在頁面載入時添加點擊事件監聽器
+    document.addEventListener('DOMContentLoaded', function() {
+      updateBotList();
+
+      // 監聽整個文檔的點擊事件
+      document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('sidebar');
+        const hamburgerBtn = document.querySelector('.hamburger-menu');
+        
+        // 如果側邊選單是開啟的，且點擊位置不在側邊選單內，也不是漢堡按鈕
+        if (sidebar.classList.contains('active') && 
+            !sidebar.contains(event.target) && 
+            !hamburgerBtn.contains(event.target)) {
+          sidebar.classList.remove('active');
+        }
+      });
+
+      // 防止側邊選單內的點擊事件冒泡到文檔
+      sidebar.addEventListener('click', function(event) {
+        event.stopPropagation();
+      });
+    });
+
+    // 切換側邊選單
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('active');
+      event.stopPropagation();  // 防止事件冒泡
+    }
+
+    // 顯示新建機器人對話框
+    function showNewBotDialog() {
+      document.getElementById('newBotDialog').style.display = 'flex';
+    }
+
+    // 關閉新建機器人對話框
+    function closeNewBotDialog() {
+      document.getElementById('newBotDialog').style.display = 'none';
+    }
+
+    // 創建新機器人
+    function createNewBot() {
+      const name = document.getElementById('botName').value.trim();
+      const personality = document.getElementById('botPersonality').value.trim();
+
+      if (!name || !personality) {
+        alert('請填寫所有欄位');
+        return;
+      }
+
+      const newBot = {
+        id: crypto.randomUUID(),
+        name,
+        personality
+      };
+
+      bots.push(newBot);
+      localStorage.setItem('chatBots', JSON.stringify(bots));
+      updateBotList();
+      closeNewBotDialog();
+      
+      // 清空輸入欄位
+      document.getElementById('botName').value = '';
+      document.getElementById('botPersonality').value = '';
+    }
+
+    // 更新機器人列表
+    function updateBotList() {
+      const botList = document.getElementById('botList');
+      botList.innerHTML = '';
+
+      bots.forEach(bot => {
+        const botContainer = document.createElement('div');
+        botContainer.className = 'bot-item';
+        if (bot.name === aiName) {
+          botContainer.classList.add('active');
+        }
+        
+        const botName = document.createElement('span');
+        botName.textContent = bot.name;
+        botContainer.appendChild(botName);
+        
+        // 只有非白澤機器人才添加刪除按鈕
+        if (bot.id !== 'default') {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-bot';
+          deleteBtn.innerHTML = '×';
+          deleteBtn.title = '刪除機器人';
+          deleteBtn.onclick = (e) => {
+            e.stopPropagation();  // 防止觸發切換機器人
+            deleteBot(bot.id);
+          };
+          botContainer.appendChild(deleteBtn);
+        }
+        
+        botContainer.onclick = () => switchBot(bot);
+        botList.appendChild(botContainer);
+      });
+    }
+
+    // 切換機器人
+    function switchBot(bot) {
+      aiName = bot.name;
+      botTitle = bot.name;
+      localStorage.setItem('aiName', bot.name);
+      localStorage.setItem('botTitle', bot.name);
+      document.querySelector('h1').textContent = bot.name;
+      
+      // 更新機器人列表中的激活狀態
+      const botItems = document.querySelectorAll('.bot-item');
+      botItems.forEach(item => {
+        if (item.querySelector('span').textContent === bot.name) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+      
+      // 產生新的 session_id
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('chatSessionId', sessionId);
+      
+      // 清除聊天記錄
+      document.getElementById('chatbox').innerHTML = '';
+      
+      // 關閉側邊選單
+      toggleSidebar();
+    }
+
+    // 添加刪除機器人函數
+    function deleteBot(botId) {
+      if (confirm('確定要刪除這個機器人嗎？')) {
+        // 如果正在使用要刪除的機器人，先切換回白澤
+        const botToDelete = bots.find(b => b.id === botId);
+        if (botToDelete && botToDelete.name === aiName) {
+          const defaultBot = bots.find(b => b.id === 'default');
+          switchBot(defaultBot);
+        }
+        
+        // 從列表中移除機器人
+        bots = bots.filter(b => b.id !== botId);
+        localStorage.setItem('chatBots', JSON.stringify(bots));
+        updateBotList();
+      }
+    }
+
+    // 在頁面載入時更新機器人列表
+    document.addEventListener('DOMContentLoaded', function() {
+      updateBotList();
     });
   </script>
 </body>
