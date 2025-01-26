@@ -585,7 +585,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             message: userMessage,
-            userName: userName
+            userName: userName,
+            chatHistory: await getChatHistory()  // 獲取聊天歷史
           })
         });
 
@@ -761,7 +762,22 @@
       }
     });
 
-    // 其他現有的程式碼...
+    // 獲取聊天歷史的輔助函數
+    async function getChatHistory() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('chat_messages')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error('Error getting chat history:', error);
+        return [];
+      }
+    }
   </script>
 </body>
 </html>

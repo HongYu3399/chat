@@ -47,7 +47,15 @@ app.get('/favicon.ico', (req, res) => {
 // 聊天路由
 app.post('/chat', async (req, res) => {
   try {
-    const { message, userName } = req.body;
+    const { message, userName, chatHistory } = req.body;
+
+    // 準備對話歷史，只取最近的 4 輪對話
+    const recentMessages = chatHistory
+      .slice(-8)  // 取最後 4 輪對話（8 條消息，包含用戶和 AI 的回覆）
+      .map(msg => ({
+        role: msg.is_user ? "user" : "assistant",
+        content: msg.content
+      }));
 
     // 呼叫 OpenAI API
     const completion = await openai.chat.completions.create({
@@ -63,13 +71,14 @@ app.post('/chat', async (req, res) => {
             回答時，盡量使用能讓對方感到安心和被重視的口吻。
             如有需要，可以引用白澤的神話意象（如驅趕邪祟、洞察百怪等）。`
         },
+        ...recentMessages,  // 添加最近的對話歷史
         {
           "role": "user",
           "content": `使用者 ${userName} 說: ${message}`
         }
       ],
       temperature: 0.9,
-      max_tokens: 500
+      max_tokens: 300  // 減少回覆長度以節省 token
     });
 
     // 取得回覆
