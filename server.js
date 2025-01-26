@@ -22,10 +22,22 @@ const openai = new OpenAI({
 app.use(cors({
   origin: '*',  // 允許所有來源
   methods: ['GET', 'POST'],
-  credentials: true
+  credentials: false
 }));
 app.use(express.json());
 app.use(express.static('public')); // 提供靜態檔案服務
+
+// 提供 Supabase 配置的路由
+app.get('/config', (req, res) => {
+  console.log('Sending Supabase config:', {
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseKey: process.env.SUPABASE_KEY
+  });
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseKey: process.env.SUPABASE_KEY
+  });
+});
 
 // 處理 favicon.ico 請求
 app.get('/favicon.ico', (req, res) => {
@@ -72,6 +84,22 @@ app.post('/chat', async (req, res) => {
       error: '無法取得回覆',
       details: error.message 
     });
+  }
+});
+
+// 測試 Supabase 連接
+app.get('/test-supabase', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('count')
+      .single();
+
+    if (error) throw error;
+    res.json({ status: 'success', data });
+  } catch (error) {
+    console.error('Supabase connection error:', error);
+    res.status(500).json({ status: 'error', error: error.message });
   }
 });
 
