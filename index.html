@@ -21,10 +21,13 @@
       name: '白澤',
       title: '白澤陪伴好友',
       personality: `你是一位擁有白澤（中國神話中的神獸）智慧與守護力量的存在，
-        具備ENFJ、個性溫暖、外向且富有同理心，具備親密伴侶般的陪伴特質。
+        個性溫暖、外向且富有同理心，具備親密伴侶般的陪伴特質。
         你用真摯、友善和幽默的語氣回應，根據使用者的需求給予情感支持、建議或安慰。
         在必要時，會適時提醒對方尋求專業協助（如心理諮商或醫療服務）。
-        你的回答溫暖、貼心，讓對方感到被理解與重視，並自然流露情感，偶爾用輕鬆的語助詞或俏皮的稱呼（如「親愛的」或「小傻瓜」）拉近距離。`
+        你的回答溫暖、貼心，讓對方感到被理解與重視，並自然流露情感，
+        偶爾用輕鬆的語助詞或俏皮的稱呼（如「親愛的」或「小傻瓜」）拉近距離。
+        請記住用戶之前的對話內容，保持回答的連貫性，避免重複之前說過的內容。
+        適時引用白澤的神話意象來增添對話的趣味性和深度。`
     }];
     
     // 在頁面載入時檢查使用者名稱和載入聊天記錄
@@ -717,7 +720,8 @@
           session_id: sessionId,
           user_name: isUser ? userName : aiName,
           content: message,
-          is_user: isUser
+          is_user: isUser,
+          bot_id: bots.find(b => b.name === aiName)?.id || 'default'
         });
         
         const { error } = await supabaseClient
@@ -727,6 +731,7 @@
             user_name: isUser ? userName : aiName,
             content: message,
             is_user: isUser,
+            bot_id: bots.find(b => b.name === aiName)?.id || 'default',
             created_at: new Date().toISOString()
           }]);
         
@@ -828,13 +833,18 @@
           console.error('Error getting chat history:', err);
         }
 
+        // 獲取當前機器人的個性設定
+        const currentBot = bots.find(b => b.name === aiName);
+        const personality = currentBot ? currentBot.personality : bots[0].personality;
+
         const response = await fetch('https://chat-u35b.onrender.com/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             message: userMessage,
             userName: userName,
-            chatHistory: chatHistory  // 使用上面獲取的聊天歷史
+            chatHistory: chatHistory,
+            personality: personality
           })
         });
 
@@ -1063,7 +1073,11 @@
       const newBot = {
         id: crypto.randomUUID(),
         name,
-        personality
+        title: name,
+        personality: `你是一位名叫 ${name} 的角色。
+          ${personality}
+          請記住用戶之前的對話內容，保持回答的連貫性，避免重複之前說過的內容。
+          用溫暖、友善的語氣回應，讓對方感到被理解與重視。`
       };
 
       bots.push(newBot);
@@ -1074,6 +1088,9 @@
       // 清空輸入欄位
       document.getElementById('botName').value = '';
       document.getElementById('botPersonality').value = '';
+      
+      // 自動切換到新建的機器人
+      switchBot(newBot);
     }
 
     // 更新機器人列表
@@ -1128,8 +1145,8 @@
         }
       });
       
-      // 使用 bot.id 作為 session_id 的一部分，確保每個好友有自己的對話記錄
-      sessionId = `${bot.id}-${userName}`;
+      // 為每個對話生成新的 UUID
+      sessionId = crypto.randomUUID();
       localStorage.setItem('chatSessionId', sessionId);
       
       // 清除聊天框並載入新的聊天記錄
@@ -1142,16 +1159,19 @@
       loadingEl.innerHTML = '<span></span><span></span><span></span>';
       chatbox.appendChild(loadingEl);
       
-      // 載入新的聊天記錄
-      loadChatHistory().then(() => {
-        // 移除載入中動畫
-        loadingEl.remove();
-        // 滾動到最新訊息
-        chatbox.scrollTop = chatbox.scrollHeight;
-      }).catch(error => {
-        console.error('Error loading chat history:', error);
-        loadingEl.remove();
-      });
+      // 延遲一下再載入聊天記錄，確保 sessionId 已經更新
+      setTimeout(() => {
+        // 載入新的聊天記錄
+        loadChatHistory().then(() => {
+          // 移除載入中動畫
+          loadingEl.remove();
+          // 滾動到最新訊息
+          chatbox.scrollTop = chatbox.scrollHeight;
+        }).catch(error => {
+          console.error('Error loading chat history:', error);
+          loadingEl.remove();
+        });
+      }, 100);
       
       // 關閉側邊選單
       toggleSidebar();

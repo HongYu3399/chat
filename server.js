@@ -47,7 +47,7 @@ app.get('/favicon.ico', (req, res) => {
 // 聊天路由
 app.post('/chat', async (req, res) => {
   try {
-    const { message, userName, chatHistory } = req.body;
+    const { message, userName, chatHistory, personality } = req.body;
 
     // 準備對話歷史，只取最近的 4 輪對話
     const recentMessages = chatHistory
@@ -63,9 +63,7 @@ app.post('/chat', async (req, res) => {
       messages: [
         {
           "role": "system",
-          "content": `回答溫暖、貼心，讓對方感到被理解與重視，並自然流露情感，
-            偶爾用輕鬆的語助詞或俏皮的稱呼(例如寶貝)拉近距離。
-            伴侶。去AI。真人話，少句號和逗號。`
+          "content": personality
         },
         ...recentMessages,  // 添加最近的對話歷史
         {
