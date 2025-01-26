@@ -1128,8 +1128,8 @@
         }
       });
       
-      // 產生新的 session_id
-      sessionId = crypto.randomUUID();
+      // 使用 bot.id 作為 session_id 的一部分，確保每個好友有自己的對話記錄
+      sessionId = `${bot.id}-${userName}`;
       localStorage.setItem('chatSessionId', sessionId);
       
       // 清除聊天框並載入新的聊天記錄
